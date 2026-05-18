@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026 Election Seat Projections</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --dem: #1a5fa8;
+    --dem-mid: #4a8fd4;
+    --dem-light: #c8dff5;
+    --rep: #b03020;
+    --rep-mid: #d4694a;
+    --rep-light: #f5cfc8;
+    --bg: #f5f2eb;
+    --surface: #faf8f3;
+    --border: rgba(0,0,0,0.1);
+    --text: #1a1814;
+    --muted: #6b6558;
+    --rule: #d4cfc0;
+  }
+
+  body {
+    font-family: 'DM Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  header {
+    background: var(--text);
+    color: #f5f2eb;
+    padding: 2.5rem 2rem 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 60px,
+      rgba(255,255,255,0.02) 60px,
+      rgba(255,255,255,0.02) 61px
+    );
+  }
+
+  .header-eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(245,242,235,0.5);
+    margin-bottom: 0.5rem;
+  }
+
+  h1 {
+    font-family: 'Libre Baskerville', serif;
+    font-size: clamp(1.6rem, 4vw, 2.4rem);
+    font-weight: 700;
+    line-height: 1.2;
+    max-width: 600px;
+  }
+
+  .header-sub {
+    margin-top: 0.75rem;
+    font-size: 12px;
+    color: rgba(245,242,235,0.55);
+    max-width: 500px;
+    line-height: 1.6;
+  }
+
+  main {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+  }
+
+  /* Slider section */
+  .slider-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1.75rem;
+    margin-bottom: 2rem;
+  }
+
+  .slider-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .slider-heading {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .pct-display {
+    display: flex;
+    gap: 1.5rem;
+    align-items: baseline;
+  }
+
+  .pct-val {
+    font-family: 'Libre Baskerville', serif;
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .pct-val.dem { color: var(--dem); }
+  .pct-val.rep { color: var(--rep); }
+
+  .pct-tag {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .vs-sep { color: var(--rule); font-size: 1.2rem; }
+
+  /* Custom range input */
+  input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    background: var(--rule);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+    margin: 0.5rem 0;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--text);
+    border: 3px solid var(--bg);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+    transition: transform 0.1s;
+  }
+
+  input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+  input[type=range]::-moz-range-thumb {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--text); border: 3px solid var(--bg);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.25); cursor: pointer;
+  }
+
+  .slider-ticks {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 4px;
+    letter-spacing: 0.04em;
+  }
+
+  /* Summary cards */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+    margin-bottom: 2rem;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1rem;
+  }
+
+  .card-label {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .card-val {
+    font-family: 'Libre Baskerville', serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .card-val.dem { color: var(--dem); }
+  .card-val.rep { color: var(--rep); }
+  .card-val.neutral { color: var(--text); }
+
+  .card-sub {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .ctrl-dem { color: var(--dem); font-weight: 500; }
+  .ctrl-rep { color: var(--rep); font-weight: 500; }
+
+  /* Band sections */
+  .chamber {
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  .chamber:last-child { border-bottom: none; }
+
+  .chamber-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .chamber-title {
+    font-family: 'Libre Baskerville', serif;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  .chamber-subtitle {
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .band-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: 11px;
+  }
+
+  .band-party {
+    width: 28px;
+    color: var(--muted);
+    flex-shrink: 0;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-size: 10px;
+  }
+
+  .band-track {
+    flex: 1;
+    height: 18px;
+    background: rgba(0,0,0,0.05);
+    border-radius: 2px;
+    position: relative;
+    overflow: visible;
+  }
+
+  .band-bar {
+    height: 100%;
+    border-radius: 2px;
+    position: absolute;
+    transition: left 0.25s ease, width 0.25s ease;
+  }
+
+  .band-center-line {
+    position: absolute;
+    width: 2.5px;
+    height: 26px;
+    top: -4px;
+    border-radius: 1px;
+    transition: left 0.25s ease;
+  }
+
+  .majority-line {
+    position: absolute;
+    width: 1px;
+    height: 100%;
+    background: rgba(0,0,0,0.2);
+    top: 0;
+  }
+
+  .majority-label {
+    position: absolute;
+    font-size: 9px;
+    color: var(--muted);
+    top: -16px;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    letter-spacing: 0.04em;
+  }
+
+  .band-nums {
+    width: 130px;
+    flex-shrink: 0;
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+
+  .band-nums strong { color: var(--text); }
+
+  .central-est {
+    font-size: 11px;
+    color: var(--muted);
+    margin-left: 38px;
+    margin-top: 4px;
+    margin-bottom: 0;
+  }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 2rem;
+    padding: 0.75rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .leg-swatch { width: 22px; height: 10px; border-radius: 1px; flex-shrink: 0; }
+  .leg-line { width: 3px; height: 14px; border-radius: 1px; flex-shrink: 0; }
+
+  /* Footer */
+  .footnote {
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.8;
+    border-top: 1px solid var(--rule);
+    padding-top: 1.5rem;
+    margin-top: 1rem;
+  }
+
+  .footnote strong { color: var(--text); }
+
+  @media (max-width: 560px) {
+    header { padding: 1.5rem 1rem 1.5rem; }
+    main { padding: 1.25rem 1rem 3rem; }
+    .band-nums { width: 100px; font-size: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-eyebrow">Interactive model · 2026 midterm cycle</div>
+  <h1>Election Seat Projections</h1>
+  <p class="header-sub">Adjust the Democratic generic ballot share to see projected seat outcomes and confidence bands for House, Senate, and gubernatorial races.</p>
+</header>
+
+<main>
+
+  <div class="slider-section">
+    <div class="slider-top">
+      <div class="slider-heading">Democratic generic ballot share</div>
+      <div class="pct-display">
+        <div>
+          <span class="pct-tag">Dem</span>
+          <span class="pct-val dem" id="dem-pct">50.0%</span>
+        </div>
+        <span class="vs-sep">·</span>
+        <div>
+          <span class="pct-tag">Rep</span>
+          <span class="pct-val rep" id="rep-pct">50.0%</span>
+        </div>
+      </div>
+    </div>
+    <input type="range" min="43" max="57" step="0.5" value="50" id="dem-slider">
+    <div class="slider-ticks">
+      <span>R+7 (43%)</span>
+      <span>R+4 (46%)</span>
+      <span>Even (50%)</span>
+      <span>D+4 (54%)</span>
+      <span>D+7 (57%)</span>
+    </div>
+  </div>
+
+  <div class="cards" id="summary-cards"></div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="leg-swatch" style="background:#c8dff5;"></div>80% band (Dem)</div>
+    <div class="legend-item"><div class="leg-swatch" style="background:#4a8fd4;"></div>50% band (Dem)</div>
+    <div class="legend-item"><div class="leg-line" style="background:#1a5fa8;"></div>Central est. (Dem)</div>
+    <div class="legend-item"><div class="leg-swatch" style="background:#f5cfc8;"></div>80% band (Rep)</div>
+    <div class="legend-item"><div class="leg-swatch" style="background:#d4694a;"></div>50% band (Rep)</div>
+    <div class="legend-item"><div class="leg-line" style="background:#b03020;"></div>Central est. (Rep)</div>
+    <div class="legend-item"><div style="width:1px; height:14px; background:rgba(0,0,0,0.3); flex-shrink:0;"></div>Majority threshold</div>
+  </div>
+
+  <div id="chambers-container"></div>
+
+  <div class="footnote">
+    <strong>2026 cycle context.</strong> House: all 435 seats up; Republicans currently hold a 222–213 edge. Senate: 34 seats on the ballot — Democrats defending 23 (including competitive seats in MT, OH, PA, MI, WI, AZ, NV), Republicans defending 11. Governors: 39 states holding elections.<br><br>
+    <strong>Model notes.</strong> Confidence bands reflect historical generic-ballot-to-seat-share translation error (typically ±3–5 pts), structural map advantages, and Senate class-specific exposure. The Senate is modeled on 2026 class composition rather than a pure national swing. These are historically-calibrated heuristics, not outputs from a live forecasting model.
+  </div>
+
+</main>
+
+<script>
+const RACES = {
+  house: {
+    label: "House of Representatives",
+    sub: "All 435 seats · Majority = 218",
+    total: 435,
+    majority: 218,
+    baseline: 213,
+    sigma50: 8,
+    sigma80: 18,
+    sigmaScale: 4.2
+  },
+  senate: {
+    label: "Senate",
+    sub: "34 seats up in 2026 · Majority = 51 · Current: R 53, D 47",
+    total: 100,
+    majority: 51,
+    baseline: 47,
+    sigma50: 2,
+    sigma80: 4,
+    sigmaScale: 0.9
+  },
+  gov: {
+    label: "Governors",
+    sub: "39 states up in 2026 · Current: D 23, R 27",
+    total: 50,
+    majority: null,
+    baseline: 23,
+    sigma50: 2,
+    sigma80: 4,
+    sigmaScale: 1.0
+  }
+};
+
+function project(chamber, demShare) {
+  const swing = demShare - 50;
+  const r = RACES[chamber];
+  const centralDem = Math.round(r.baseline + swing * r.sigmaScale);
+  return {
+    centralDem,
+    lo80: Math.round(centralDem - r.sigma80),
+    hi80: Math.round(centralDem + r.sigma80),
+    lo50: Math.round(centralDem - r.sigma50),
+    hi50: Math.round(centralDem + r.sigma50)
+  };
+}
+
+function renderCards(demShare) {
+  const hP = project('house', demShare);
+  const sP = project('senate', demShare);
+  const gP = project('gov', demShare);
+  const swing = demShare - 50;
+  const swingLabel = swing === 0 ? 'Even' : (swing > 0 ? `D+${swing.toFixed(1)}` : `R+${Math.abs(swing).toFixed(1)}`);
+
+  function ctrl(p, maj) {
+    if (!maj) return null;
+    return p >= maj ? 'dem' : 'rep';
+  }
+
+  const hCtrl = ctrl(hP.centralDem, 218);
+  const sCtrl = ctrl(sP.centralDem, 51);
+
+  return `
+    <div class="card">
+      <div class="card-label">National environment</div>
+      <div class="card-val ${demShare >= 50 ? 'dem' : 'rep'}">${swingLabel}</div>
+      <div class="card-sub">${demShare.toFixed(1)}% Dem / ${(100 - demShare).toFixed(1)}% Rep</div>
+    </div>
+    <div class="card">
+      <div class="card-label">House</div>
+      <div class="card-val ${hCtrl}">${hP.centralDem}D – ${435 - hP.centralDem}R</div>
+      <div class="card-sub"><span class="ctrl-${hCtrl}">→ ${hCtrl === 'dem' ? 'Dem' : 'Rep'} majority</span></div>
+    </div>
+    <div class="card">
+      <div class="card-label">Senate</div>
+      <div class="card-val ${sCtrl}">${sP.centralDem}D – ${100 - sP.centralDem}R</div>
+      <div class="card-sub"><span class="ctrl-${sCtrl}">→ ${sCtrl === 'dem' ? 'Dem' : 'Rep'} majority</span></div>
+    </div>
+    <div class="card">
+      <div class="card-label">Governors</div>
+      <div class="card-val ${gP.centralDem >= 25 ? 'dem' : 'rep'}">${gP.centralDem}D – ${50 - gP.centralDem}R</div>
+      <div class="card-sub">of 50 total seats</div>
+    </div>`;
+}
+
+function renderChamber(key, demShare) {
+  const r = RACES[key];
+  const p = project(key, demShare);
+  const total = r.total;
+
+  const minV = Math.max(0, p.lo80 - 4);
+  const maxV = Math.min(total, p.hi80 + 4);
+  const range = maxV - minV;
+
+  const pct = v => ((v - minV) / range * 100).toFixed(2) + '%';
+  const pctW = (a, b) => ((b - a) / range * 100).toFixed(2) + '%';
+
+  const majPct = r.majority ? pct(r.majority) : null;
+  const majLine = majPct ? `<div class="majority-line" style="left:${majPct};"><div class="majority-label">${r.majority} seats</div></div>` : '';
+
+  const ctrl = r.majority ? (p.centralDem >= r.majority ? 'Dem majority' : 'Rep majority') : null;
+  const ctrlCls = ctrl ? (ctrl.startsWith('D') ? 'ctrl-dem' : 'ctrl-rep') : '';
+
+  return `
+    <div class="chamber">
+      <div class="chamber-header">
+        <div class="chamber-title">${r.label}</div>
+        <div class="chamber-subtitle">${r.sub}</div>
+      </div>
+
+      <div class="band-row">
+        <div class="band-party" style="color:var(--dem);">DEM</div>
+        <div class="band-track">
+          ${majLine}
+          <div class="band-bar" style="left:${pct(p.lo80)};width:${pctW(p.lo80,p.hi80)};background:var(--dem-light);"></div>
+          <div class="band-bar" style="left:${pct(p.lo50)};width:${pctW(p.lo50,p.hi50)};background:var(--dem-mid);"></div>
+          <div class="band-center-line" style="left:calc(${pct(p.centralDem)} - 1.25px);background:var(--dem);"></div>
+        </div>
+        <div class="band-nums">
+          <strong>${p.lo80}–${p.hi80}</strong> <span style="font-size:10px;">(80%)</span><br>
+          <strong>${p.lo50}–${p.hi50}</strong> <span style="font-size:10px;">(50%)</span>
+        </div>
+      </div>
+
+      <div class="band-row">
+        <div class="band-party" style="color:var(--rep);">REP</div>
+        <div class="band-track">
+          <div class="band-bar" style="left:${pct(total - p.hi80)};width:${pctW(total - p.hi80, total - p.lo80)};background:var(--rep-light);"></div>
+          <div class="band-bar" style="left:${pct(total - p.hi50)};width:${pctW(total - p.hi50, total - p.lo50)};background:var(--rep-mid);"></div>
+          <div class="band-center-line" style="left:calc(${pct(total - p.centralDem)} - 1.25px);background:var(--rep);"></div>
+        </div>
+        <div class="band-nums">
+          <strong>${total - p.hi80}–${total - p.lo80}</strong> <span style="font-size:10px;">(80%)</span><br>
+          <strong>${total - p.hi50}–${total - p.lo50}</strong> <span style="font-size:10px;">(50%)</span>
+        </div>
+      </div>
+
+      <p class="central-est">Central estimate: <span class="${ctrlCls}" style="font-weight:500;">${p.centralDem}D – ${total - p.centralDem}R</span>${ctrl ? ` → <span class="${ctrlCls}">${ctrl}</span>` : ''}</p>
+    </div>`;
+}
+
+function render(demShare) {
+  document.getElementById('dem-pct').textContent = demShare.toFixed(1) + '%';
+  document.getElementById('rep-pct').textContent = (100 - demShare).toFixed(1) + '%';
+  document.getElementById('summary-cards').innerHTML = renderCards(demShare);
+  document.getElementById('chambers-container').innerHTML =
+    renderChamber('house', demShare) +
+    renderChamber('senate', demShare) +
+    renderChamber('gov', demShare);
+}
+
+document.getElementById('dem-slider').addEventListener('input', function() {
+  render(parseFloat(this.value));
+});
+
+render(50);
+</script>
+</body>
+</html>
